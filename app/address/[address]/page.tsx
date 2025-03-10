@@ -149,12 +149,12 @@ export default function AddressDetail() {
                                 <li>直接在浏览器中访问以下链接测试API是否可用：</li>
                             </ol>
                             <a 
-                                href={`http://195.201.224.207:3003/api/user-info/${address}`} 
+                                href={`http://localhost/api/user-info/${address}`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-600 underline block mt-2"
                             >
-                                http://195.201.224.207:3003/api/user-info/{address}
+                                http://localhost/api/user-info/{address}
                             </a>
                         </div>
                     </div>

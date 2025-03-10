@@ -21,7 +21,7 @@ export default function Index() {
         setRefreshing(true)
       }
 
-      const baseUrl = "http://192.168.31.231:3002/api/worker-data"
+      const baseUrl = "http://localhost/api/worker-data"
       const apiUrl1 = `/api/proxy/worker-data/47`
       const apiUrl2 = `/api/proxy/worker-data/50`
 
