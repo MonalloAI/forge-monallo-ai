@@ -59,10 +59,8 @@ interface CombinedChartData {
   topic_id?: number
 }
 
-// 时间范围类型
 type TimeRange = "day" | "month" | "year" | "all"
 
-// 缩放状态
 interface ZoomState {
   refAreaLeft: string | null
   refAreaRight: string | null
@@ -76,13 +74,12 @@ interface ZoomState {
 const formatNumber = (num: number | null | undefined): string => {
   if (num === null || num === undefined) return "0"
 
-  // 处理科学计数法的情况
   if (Math.abs(num) < 0.0001 && num !== 0) {
-    // 将科学计数法转换为固定小数点表示
+
     return num.toFixed(6).replace(/\.?0+$/, "")
   }
 
-  // 对于较大的数字，使用标准格式化
+
   return num.toLocaleString("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 6,
@@ -95,11 +92,10 @@ export default function AddressDetail() {
   const searchParams = useSearchParams()
   const address = params.address as string
 
-  // 从URL参数获取当前选择的topic_id和时间范围
+
   const currentTopicId = searchParams.get("topic_id") || "all"
   const currentTimeRange = (searchParams.get("timeRange") || "day") as TimeRange
 
-  // 在组件顶部添加本地状态来管理筛选条件
   const [localTopicId, setLocalTopicId] = useState(currentTopicId)
   const [localTimeRange, setLocalTimeRange] = useState<TimeRange>(currentTimeRange as TimeRange)
   const [userData, setUserData] = useState<UserProfile | null>(null)
@@ -114,7 +110,6 @@ export default function AddressDetail() {
   const MAX_RETRIES = 3
   const RETRY_DELAY = 3000
 
-  // 缩放状态
   const [zoom, setZoom] = useState<ZoomState>({
     refAreaLeft: null,
     refAreaRight: null,
@@ -125,13 +120,11 @@ export default function AddressDetail() {
     animation: true,
   })
 
-  // 替换现有的 updateUrlParams 函数
   const updateUrlParams = (topicId: string, timeRange: TimeRange) => {
-    // 更新本地状态
+
     setLocalTopicId(topicId)
     setLocalTimeRange(timeRange)
 
-    // 更新 URL 但不刷新页面
     const params = new URLSearchParams(searchParams.toString())
     params.set("topic_id", topicId)
     params.set("timeRange", timeRange)
@@ -140,12 +133,10 @@ export default function AddressDetail() {
     window.history.pushState({ path: newUrl }, "", newUrl)
   }
 
-  // 处理Topic ID变化
   const handleTopicChange = (value: string) => {
     updateUrlParams(value, localTimeRange)
   }
 
-  // 处理时间范围变化
   const handleTimeRangeChange = (range: TimeRange) => {
     updateUrlParams(localTopicId, range)
   }
@@ -173,7 +164,6 @@ export default function AddressDetail() {
       if (data && data.success === true && data.data) {
         setUserData(data.data)
 
-        // 从competitions中提取可用的topic_ids，确保没有重复
         if (data.data.competitions && data.data.competitions.length > 0) {
           // 使用Map来确保每个topic_id只出现一次
           const topicsMap = new Map()
@@ -186,7 +176,7 @@ export default function AddressDetail() {
             }
           })
 
-          // 将Map转换回数组
+     
           const uniqueTopics = Array.from(topicsMap.values())
           setAvailableTopics(uniqueTopics)
         }
@@ -204,10 +194,9 @@ export default function AddressDetail() {
           duration: RETRY_DELAY - 1000,
         })
 
-        // 设置重试计数
+        
         setRetryCount(retryAttempt + 1)
 
-        // 延迟后重试
         setTimeout(() => {
           fetchAddressInfo(retryAttempt + 1)
         }, RETRY_DELAY)
@@ -222,9 +211,8 @@ export default function AddressDetail() {
     }
   }
 
-  // 获取历史提交数据
   const fetchSubmissionHistory = useCallback(async () => {
-    if (isHistoryLoaded) return // 如果数据已加载，直接返回
+    if (isHistoryLoaded) return
 
     setIsHistoryLoading(true)
 
@@ -241,9 +229,8 @@ export default function AddressDetail() {
       const responseData = await response.json()
       console.log("Received submission history data:", responseData)
 
-      // 确保数据格式正确 - API返回的是 {success: true, data: Array}
       if (responseData && responseData.success === true && Array.isArray(responseData.data)) {
-        // 确保数据格式正确
+
         const formattedData = responseData.data.map((item) => ({
           timestamp: item.timestamp || new Date().toISOString(),
           value:
@@ -272,7 +259,7 @@ export default function AddressDetail() {
     }
   }, [address, isHistoryLoaded])
 
-  // 合并数据
+
   useEffect(() => {
     if (submissionHistory.length === 0) return
 
@@ -282,25 +269,22 @@ export default function AddressDetail() {
       topic_id: item.topic_id
     }))
 
-    // 按时间排序
     combined.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     
     setFilteredData(combined)
   }, [submissionHistory])
 
-  // 替换现有的 useEffect 过滤数据的逻辑，使用本地状态而不是 URL 参数
   useEffect(() => {
     if (!filteredData.length) return
 
     let filtered = [...filteredData]
 
-    // 按Topic ID过滤
+
     if (localTopicId !== "all") {
       const topicIdNum = Number.parseInt(localTopicId, 10)
       filtered = filtered.filter((item) => item.topic_id === topicIdNum)
     }
 
-    // 按时间范围过滤
     if (localTimeRange !== "all") {
       const now = new Date()
       const cutoffDate = new Date()
@@ -320,13 +304,13 @@ export default function AddressDetail() {
       filtered = filtered.filter((item) => new Date(item.timestamp) >= cutoffDate)
     }
 
-    // 按时间排序
+
     filtered.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
 
     setFilteredData(filtered)
   }, [filteredData.length, localTopicId, localTimeRange])
 
-  // 设置 WebSocket 连接
+
   useEffect(() => {
     let ws: WebSocket | null = null
 
@@ -336,7 +320,7 @@ export default function AddressDetail() {
       }
       await fetchSubmissionHistory()
 
-      // 尝试创建 WebSocket 连接，但不阻止其他功能
+    
       try {
         ws = new WebSocket("ws://localhost:3005")
 
@@ -369,7 +353,7 @@ export default function AddressDetail() {
 
         ws.onerror = () => {
           console.error("WebSocket connection error - real-time updates disabled")
-          // Close the socket on error to prevent further attempts
+
           if (ws) {
             ws.close()
             ws = null
@@ -393,13 +377,12 @@ export default function AddressDetail() {
     }
   }, [address, fetchSubmissionHistory, userData])
 
-  // 在组件初始化时，同步 URL 参数到本地状态
+
   useEffect(() => {
     setLocalTopicId(currentTopicId)
     setLocalTimeRange(currentTimeRange as TimeRange)
   }, [])
 
-  // 图表缩放功能
   const handleMouseDown = (e: any) => {
     if (!e || !e.activeLabel) return
     setZoom({
@@ -428,7 +411,6 @@ export default function AddressDetail() {
       return
     }
 
-    // 确保左边的时间戳小于右边的时间戳
     let left = zoom.refAreaLeft
     let right = zoom.refAreaRight
 
@@ -436,7 +418,6 @@ export default function AddressDetail() {
       ;[left, right] = [right, left]
     }
 
-    // 找到选中区域的最小值和最大值
     const zoomedData = filteredData.filter(
       (item) => new Date(item.timestamp) >= new Date(left!) && new Date(item.timestamp) <= new Date(right!),
     )
@@ -607,13 +588,11 @@ export default function AddressDetail() {
           </div>
         )}
 
-        {/* 添加历史提交数据图表 */}
         <div className="bg-white rounded-lg shadow-md p-6 mt-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <h2 className="text-xl font-bold mb-4 md:mb-0">Historical Submission Data</h2>
 
             <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-              {/* Topic ID 选择器 */}
               <div className="w-full md:w-64">
                 <Select value={localTopicId} onValueChange={handleTopicChange}>
                   <SelectTrigger className="w-full">
@@ -630,7 +609,7 @@ export default function AddressDetail() {
                 </Select>
               </div>
 
-              {/* 时间范围选择器 */}
+
               <div className="flex gap-2">
                 <Button
                   variant={localTimeRange === "day" ? "default" : "outline"}
@@ -664,7 +643,6 @@ export default function AddressDetail() {
             </div>
           </div>
 
-          {/* 缩放控制按钮 */}
           <div className="flex gap-2 ml-auto">
             <Button
               variant="outline"
