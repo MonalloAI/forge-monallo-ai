@@ -4,7 +4,7 @@ export async function GET(request: NextRequest) {
   try {
    
     const response = await fetch(
-      `http://localhost:3002/api/worker-data/47`, 
+      `http://localhost:3003/api/worker-data/47`, 
       {
         headers: {
           'Content-Type': 'application/json',

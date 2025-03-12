@@ -3,16 +3,24 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ChevronDown, Wallet, User, Users, LogOut } from 'lucide-react'
+import { ChevronDown, Wallet, User, Users, LogOut, Search } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { useRouter } from 'next/navigation'
 
-// 添加MetaMask类型声明
+// 添加 Keplr 类型声明
 declare global {
   interface Window {
-    ethereum?: {
-      request: (args: {method: string}) => Promise<string[]>
-    }
+    keplr?: {
+      enable: (chainId: string) => Promise<void>;
+      getKey: (chainId: string) => Promise<{
+        name: string;
+        algo: string;
+        pubKey: Uint8Array;
+        address: string;
+        bech32Address: string;
+      }>;
+    };
   }
 }
 
@@ -20,10 +28,46 @@ interface HeaderProps {
   className?: string;
 }
 
+// Allora Testnet 网络配置
+const CHAIN_ID = "allora-testnet";
+
 export function Header({ className }: HeaderProps) {
   const [account, setAccount] = useState('')
   const [isConnecting, setIsConnecting] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchAddress, setSearchAddress] = useState('')
+  const router = useRouter()
+
+  // 添加地址格式化函数
+  const formatAddress = (address: string) => {
+    if (!address) return '';
+    if (address.length <= 16) return address;
+    return `${address.slice(0, 8)}...${address.slice(-8)}`;
+  };
+
+  // 添加复制地址功能
+  const copyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(account);
+      toast.success('Address copied to clipboard');
+    } catch (err) {
+      toast.error('Failed to copy address');
+    }
+  };
+
+  // 添加跳转到个人页面功能
+  const goToProfile = () => {
+    router.push(`/address/${account}`);
+    setIsOpen(false);
+  };
+
+  const handleSearch = () => {
+    if (searchAddress.trim()) {
+      router.push(`/address/${searchAddress.trim()}`);
+      setIsSearchOpen(false);
+    }
+  };
 
   useEffect(() => {
     const savedAccount = localStorage.getItem('connectedAccount')
@@ -31,18 +75,25 @@ export function Header({ className }: HeaderProps) {
       setAccount(savedAccount)
     }
   }, [])
+
   const connectWallet = async () => {
-    if (typeof window.ethereum === 'undefined') {
-      toast.error('请安装 MetaMask 插件')
+    if (typeof window.keplr === 'undefined') {
+      toast.error('请安装 Keplr 钱包')
+      window.open('https://www.keplr.app/download', '_blank')
       return
     }
 
     setIsConnecting(true)
     try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
-      const newAccount = accounts[0]
-      setAccount(newAccount)
-      localStorage.setItem('connectedAccount', newAccount)
+      // 启用 Keplr 访问
+      await window.keplr.enable(CHAIN_ID)
+      
+      // 获取账户信息
+      const key = await window.keplr.getKey(CHAIN_ID)
+      const alloraAddress = key.bech32Address
+      
+      setAccount(alloraAddress)
+      localStorage.setItem('connectedAccount', alloraAddress)
       toast.success('连接成功')
     } catch (error) {
       console.error('连接错误:', error)
@@ -75,6 +126,31 @@ export function Header({ className }: HeaderProps) {
           </nav>
         </div>
         <div className="flex items-center space-x-4">
+          <div className="relative">
+            <div className={`flex items-center space-x-2 transition-all duration-300 ${isSearchOpen ? 'w-64' : 'w-10'}`}>
+                {isSearchOpen && (
+                    <input 
+                        type="text"
+                        value={searchAddress}
+                        onChange={(e) => setSearchAddress(e.target.value)}
+                        placeholder="Search address..."
+                        className="border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 flex-grow"
+                    />
+                )}
+                <button 
+                    onClick={() => {
+                        if (isSearchOpen && searchAddress.trim()) {
+                            handleSearch();
+                        } else {
+                            setIsSearchOpen(!isSearchOpen);
+                        }
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                    <Search className="h-5 w-5 text-gray-600" />
+                </button>
+            </div>
+          </div>
           {account ? (
             <div className="relative">
               <Button 
@@ -82,20 +158,39 @@ export function Header({ className }: HeaderProps) {
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-2"
               >
-                <span className="truncate max-w-[150px]">
-                  {account.slice(0, 6)}...{account.slice(-4)}
+                <span className="font-mono">
+                  {formatAddress(account)}
                 </span>
                 <ChevronDown className="h-4 w-4" />
               </Button>
               {isOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                <div className="absolute right-0 mt-2 w-[400px] bg-white rounded-md shadow-lg py-1 z-10">
                   <div 
-                    className="px-2 py-1 hover:bg-purple-50 cursor-pointer text-red-600"
+                    className="px-4 py-2 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+                    onDoubleClick={copyAddress}
+                  >
+                    <div className="text-sm text-gray-500 flex items-center justify-between">
+                      <span>Full Address</span>
+                      <span className="text-xs text-gray-400">(Double click to copy)</span>
+                    </div>
+                    <div className="font-mono text-sm break-all">{account}</div>
+                  </div>
+                  <div 
+                    className="px-2 py-1 hover:bg-purple-50 cursor-pointer"
+                    onClick={goToProfile}
+                  >
+                    <div className="flex items-center gap-2 p-2">
+                      <User className="h-4 w-4" />
+                      <span>View Profile</span>
+                    </div>
+                  </div>
+                  <div 
+                    className="px-2 py-1 hover:bg-purple-50 cursor-pointer text-red-600 border-t border-gray-100"
                     onClick={handleLogout}
                   >
                     <div className="flex items-center gap-2 p-2">
                       <LogOut className="h-4 w-4" />
-                      <span>退出</span>
+                      <span>Disconnect</span>
                     </div>
                   </div>
                 </div>
@@ -107,7 +202,7 @@ export function Header({ className }: HeaderProps) {
               onClick={connectWallet}
               disabled={isConnecting}
             >
-              {isConnecting ? '连接中...' : '登录MetaMask'}
+              {isConnecting ? 'Connecting...' : 'Connect Keplr'}
             </Button>
           )}
         </div>
