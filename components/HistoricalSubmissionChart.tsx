@@ -170,7 +170,7 @@ export function HistoricalSubmissionChart({
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mt-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <h2 className="text-xl font-bold mb-4 md:mb-0">历史提交数据</h2>
+        <h2 className="text-xl font-bold mb-4 md:mb-0">Historical submission data</h2>
 
         <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
           <div className="w-full md:w-64">
@@ -183,7 +183,7 @@ export function HistoricalSubmissionChart({
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-200 shadow-lg">
                 <SelectItem value="all" className="hover:bg-gray-100 cursor-pointer">
-                  所有主题
+                  All topics
                 </SelectItem>
                 {availableTopics.map((topic) => (
                   <SelectItem 
@@ -228,7 +228,7 @@ export function HistoricalSubmissionChart({
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
           </div>
-          <div className="mt-3">加载提交历史...</div>
+          <div className="mt-3">Historical submission data...</div>
         </div>
       ) : filteredData.length > 0 ? (
         <div className="h-[400px] w-full">
@@ -256,7 +256,7 @@ export function HistoricalSubmissionChart({
                 labelFormatter={(timestamp) => new Date(timestamp).toLocaleString()}
                 formatter={(value, name, props) => {
                   const data = props.payload
-                  const topicInfo = data.topic_id ? ` (主题 ID: ${data.topic_id})` : ""
+                  const topicInfo = data.topic_id ? ` (topic ID: ${data.topic_id})` : ""
                   return [formatNumber(value as number), `${name}${topicInfo}`]
                 }}
               />
@@ -268,7 +268,7 @@ export function HistoricalSubmissionChart({
                 strokeWidth={2}
                 dot={false}
                 activeDot={{ r: 8 }}
-                name="提交值"
+                name="Submission value"
               />
               <Brush dataKey="timestamp" height={30} stroke="#3B82F6" />
             </LineChart>
@@ -278,7 +278,7 @@ export function HistoricalSubmissionChart({
         <div className="text-center py-8">
           <div className="flex flex-col items-center justify-center">
             <Calendar className="h-12 w-12 text-gray-400 mb-2" />
-            <p className="text-gray-500">当前筛选条件下没有数据</p>
+            <p className="text-gray-500">No data found under current filtering conditions</p>
             {(localTopicId !== "all" || localTimeRange !== "all") && (
               <Button
                 variant="outline"
@@ -288,7 +288,7 @@ export function HistoricalSubmissionChart({
                   handleTimeRangeChange("all")
                 }}
               >
-                清除筛选
+                Clear filters
               </Button>
             )}
           </div>
