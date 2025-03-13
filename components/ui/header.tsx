@@ -20,6 +20,7 @@ declare global {
         address: string;
         bech32Address: string;
       }>;
+      experimentalSuggestChain: (chainInfo: any) => Promise<void>;
     };
   }
 }
@@ -30,6 +31,47 @@ interface HeaderProps {
 
 // Allora Testnet 网络配置
 const CHAIN_ID = "allora-testnet";
+const CHAIN_INFO = {
+  chainId: CHAIN_ID,
+  chainName: "Allora Testnet",
+  rpc: "https://testnet-rpc.allora.network",
+  rest: "https://testnet-rest.allora.network",
+  bip44: {
+    coinType: 118,
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "allora",
+    bech32PrefixAccPub: "allorapub",
+    bech32PrefixValAddr: "alloravaloperpub",
+    bech32PrefixValPub: "alloravalpub",
+    bech32PrefixConsAddr: "alloraconsaddr",
+    bech32PrefixConsPub: "alloraconspub",
+  },
+  currencies: [
+    {
+      coinDenom: "ALOT",
+      coinMinimalDenom: "ualot",
+      coinDecimals: 6,
+    },
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "ALOT",
+      coinMinimalDenom: "ualot",
+      coinDecimals: 6,
+    },
+  ],
+  stakeCurrency: {
+    coinDenom: "ALOT",
+    coinMinimalDenom: "ualot",
+    coinDecimals: 6,
+  },
+  gasPriceStep: {
+    low: 0.01,
+    average: 0.025,
+    high: 0.04,
+  },
+};
 
 export function Header({ className }: HeaderProps) {
   const [account, setAccount] = useState('')
@@ -210,4 +252,3 @@ export function Header({ className }: HeaderProps) {
     </header>
   )
 }
-

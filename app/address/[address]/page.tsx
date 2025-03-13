@@ -4,21 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { Header } from "@/components/ui/header"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "react-hot-toast"
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  ReferenceArea,
-  Brush,
-} from "recharts"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Calendar, RefreshCw } from "lucide-react"
+import { HistoricalSubmissionChart } from "../../../components/HistoricalSubmissionChart"
 
 interface UserProfile {
   first_name: string
@@ -167,7 +153,7 @@ export default function AddressDetail() {
         if (data.data.competitions && data.data.competitions.length > 0) {
           // 使用Map来确保每个topic_id只出现一次
           const topicsMap = new Map()
-          data.data.competitions.forEach((comp) => {
+          data.data.competitions.forEach((comp: UserProfile['competitions'][0]) => {
             if (!topicsMap.has(comp.topic_id)) {
               topicsMap.set(comp.topic_id, {
                 id: comp.topic_id,
@@ -231,7 +217,7 @@ export default function AddressDetail() {
 
       if (responseData && responseData.success === true && Array.isArray(responseData.data)) {
 
-        const formattedData = responseData.data.map((item) => ({
+        const formattedData = responseData.data.map((item: { timestamp?: string; value?: number | string; topic_id?: number }) => ({
           timestamp: item.timestamp || new Date().toISOString(),
           value:
             typeof item.value === "number"
@@ -588,156 +574,13 @@ export default function AddressDetail() {
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-            <h2 className="text-xl font-bold mb-4 md:mb-0">Historical Submission Data</h2>
-
-            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-              <div className="w-full md:w-64">
-                <Select value={localTopicId} onValueChange={handleTopicChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Topic" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Topics</SelectItem>
-                    {availableTopics.map((topic, index) => (
-                      <SelectItem key={`topic-${topic.id}-${index}`} value={topic.id.toString()}>
-                        {topic.name} (ID: {topic.id})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-
-              <div className="flex gap-2">
-                <Button
-                  variant={localTimeRange === "day" ? "default" : "outline"}
-                  onClick={() => handleTimeRangeChange("day")}
-                  className="flex-1 md:flex-none"
-                >
-                  Day
-                </Button>
-                <Button
-                  variant={localTimeRange === "month" ? "default" : "outline"}
-                  onClick={() => handleTimeRangeChange("month")}
-                  className="flex-1 md:flex-none"
-                >
-                  Month
-                </Button>
-                <Button
-                  variant={localTimeRange === "year" ? "default" : "outline"}
-                  onClick={() => handleTimeRangeChange("year")}
-                  className="flex-1 md:flex-none"
-                >
-                  Year
-                </Button>
-                <Button
-                  variant={localTimeRange === "all" ? "default" : "outline"}
-                  onClick={() => handleTimeRangeChange("all")}
-                  className="flex-1 md:flex-none"
-                >
-                  All
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2 ml-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetZoom}
-              disabled={!zoom.left && !zoom.right}
-              className="flex items-center gap-1"
-            >
-              <RefreshCw className="h-4 w-4" /> Reset Zoom
-            </Button>
-          </div>
-
-          {isHistoryLoading ? (
-            <div className="text-center py-8">
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-600"></div>
-              </div>
-              <div className="mt-3">Loading submission history...</div>
-            </div>
-          ) : filteredData.length > 0 ? (
-            <div className="h-[400px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={filteredData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 20,
-                  }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="timestamp"
-                    domain={zoom.left && zoom.right ? [zoom.left, zoom.right] : ["auto", "auto"]}
-                    tickFormatter={(timestamp) => {
-                      const date = new Date(timestamp)
-                      return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes()}`
-                    }}
-                    type="category"
-                    allowDataOverflow
-                  />
-                  <YAxis
-                    domain={zoom.top && zoom.bottom ? [zoom.bottom, zoom.top] : ["auto", "auto"]}
-                    allowDataOverflow
-                  />
-                  <Tooltip
-                    labelFormatter={(timestamp) => new Date(timestamp).toLocaleString()}
-                    formatter={(value, name, props) => {
-                      const data = props.payload
-                      const topicInfo = data.topic_id ? ` (Topic ID: ${data.topic_id})` : ""
-                      return [formatNumber(value as number), `${name}${topicInfo}`]
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#8884d8"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 8 }}
-                    name="Submission Value"
-                    isAnimationActive={zoom.animation}
-                  />
-                  {zoom.refAreaLeft && zoom.refAreaRight && (
-                    <ReferenceArea
-                      x1={zoom.refAreaLeft}
-                      x2={zoom.refAreaRight}
-                      strokeOpacity={0.3}
-                      fill="#8884d8"
-                      fillOpacity={0.3}
-                    />
-                  )}
-                  <Brush dataKey="timestamp" height={30} stroke="#8884d8" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="flex flex-col items-center justify-center">
-                <Calendar className="h-12 w-12 text-gray-400 mb-2" />
-                <p className="text-gray-500">No submission data available for the selected filters</p>
-                {localTopicId !== "all" || localTimeRange !== "all" ? (
-                  <Button variant="outline" className="mt-4" onClick={() => updateUrlParams("all", "all")}>
-                    Clear Filters
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          )}
-        </div>
+        <HistoricalSubmissionChart
+          submissionHistory={submissionHistory}
+          availableTopics={availableTopics}
+          isLoading={isHistoryLoading}
+          onTimeRangeChange={handleTimeRangeChange}
+          onTopicChange={handleTopicChange}
+        />
       </main>
     </div>
   )
